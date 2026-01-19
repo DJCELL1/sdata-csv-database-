@@ -32,7 +32,11 @@ ENV/
 
 # Data files (optional - remove if you want to commit your database)
 shared_data.csv
-*.csv
+
+# Google Service Account Credentials (NEVER COMMIT)
+credentials.json
+*-credentials.json
+service-account*.json
 
 # IDE
 .vscode/

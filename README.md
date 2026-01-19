@@ -1,13 +1,16 @@
-# Simple CSV Database for Streamlit Apps
+# Simple Database for Streamlit Apps
 
-A lightweight CSV-based database system that can be shared across multiple Streamlit applications.
+A lightweight database system that can be shared across multiple Streamlit applications. Supports both CSV (local) and Google Sheets (persistent cloud storage).
 
 ## Files
 
-- **`csv_db.py`** - Core database module with CRUD operations
+- **`csv_db.py`** - CSV database module with CRUD operations
+- **`gsheets_db.py`** - Google Sheets database module with CRUD operations
+- **`config.py`** - Database configuration (switch between CSV and Google Sheets)
 - **`database_manager.py`** - Main Streamlit app for managing the database
 - **`example_app.py`** - Example client app showing how to connect
-- **`shared_data.csv`** - The actual CSV database file (created automatically)
+- **`shared_data.csv`** - CSV database file (created automatically if using CSV mode)
+- **`GOOGLE_SHEETS_SETUP.md`** - Complete guide for setting up Google Sheets storage
 
 ## Installation
 
@@ -75,12 +78,32 @@ results = db.search(column="name", value="John")
 - **Multiple App Support** - Multiple Streamlit apps can read/write to the same CSV
 - **Simple API** - Easy-to-use CRUD operations
 
+## Storage Options
+
+### CSV Mode (Local Development)
+- Fast and simple
+- No setup required
+- Data stored in `shared_data.csv`
+- **Not persistent** on Streamlit Cloud (resets on app restart)
+
+### Google Sheets Mode (Production/Cloud)
+- **Persistent** cloud storage
+- Data survives app restarts
+- Can view/edit directly in Google Sheets
+- Free for reasonable usage
+- Requires Google Cloud setup (see `GOOGLE_SHEETS_SETUP.md`)
+
+To switch between modes, edit `config.py`:
+```python
+DATABASE_TYPE = "gsheets"  # or "csv"
+```
+
 ## Notes
 
-- The CSV file is shared across all apps, so changes in one app are visible in others
-- For concurrent access, you may need to add file locking for production use
-- This is suitable for small to medium datasets (< 100K records)
-- For larger datasets or multi-user scenarios, consider using a proper database (SQLite, PostgreSQL, etc.)
+- Data is shared across all apps using the same database
+- Google Sheets mode is recommended for Streamlit Cloud deployment
+- Suitable for small to medium datasets (< 100K records)
+- For larger datasets, consider PostgreSQL (Supabase, etc.)
 
 ## Uploading Cin7 Product Exports
 

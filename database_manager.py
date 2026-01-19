@@ -1,24 +1,37 @@
 """
-Database Manager - Main Streamlit app for managing the CSV database
+Database Manager - Main Streamlit app for managing the database
 """
 
 import streamlit as st
 import pandas as pd
-from csv_db import CSVDatabase
+from config import get_database, DATABASE_TYPE
 
 # Page configuration
 st.set_page_config(
-    page_title="CSV Database Manager",
+    page_title="Database Manager",
     page_icon="🗄️",
     layout="wide"
 )
 
 # Initialize database
-db = CSVDatabase("shared_data.csv")
+try:
+    db = get_database()
+    db_status = "connected"
+except Exception as e:
+    st.error(f"Failed to connect to database: {str(e)}")
+    st.info("Please check your configuration and credentials.")
+    st.stop()
 
 # Title
-st.title("🗄️ CSV Database Manager")
-st.markdown("Manage your shared CSV database with CRUD operations")
+storage_type = "Google Sheets" if DATABASE_TYPE == "gsheets" else "CSV"
+st.title(f"🗄️ Database Manager ({storage_type})")
+st.markdown(f"Manage your shared database with CRUD operations")
+
+# Show Google Sheets link if applicable
+if DATABASE_TYPE == "gsheets" and hasattr(db, 'get_spreadsheet_url'):
+    url = db.get_spreadsheet_url()
+    if url:
+        st.info(f"📊 [Open Google Spreadsheet]({url})")
 
 # Sidebar for operations
 st.sidebar.header("Operations")
