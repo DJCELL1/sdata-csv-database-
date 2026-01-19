@@ -7,7 +7,7 @@ import os
 
 # Database configuration
 # Options: "csv" or "gsheets"
-DATABASE_TYPE = "gsheets"  # Change to "csv" for local CSV storage
+DATABASE_TYPE = "csv"  # Change to "gsheets" for Google Sheets storage
 
 # CSV settings
 CSV_PATH = "shared_data.csv"

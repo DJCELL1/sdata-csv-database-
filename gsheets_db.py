@@ -8,8 +8,8 @@ import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 from typing import Optional, List, Dict
 from datetime import datetime
-import streamlit as st
 import json
+import os
 
 
 class GoogleSheetsDatabase:
@@ -30,25 +30,35 @@ class GoogleSheetsDatabase:
         self._connect()
 
     def _connect(self):
-        """Connect to Google Sheets using credentials from Streamlit secrets."""
+        """Connect to Google Sheets using credentials from Streamlit secrets or local file."""
         try:
-            # Get credentials from Streamlit secrets
+            # Get credentials
             scope = [
                 "https://spreadsheets.google.com/feeds",
                 "https://www.googleapis.com/auth/drive"
             ]
 
-            # Check if running in Streamlit Cloud (secrets available)
-            if hasattr(st, 'secrets') and 'gcp_service_account' in st.secrets:
-                credentials_dict = dict(st.secrets["gcp_service_account"])
-                credentials = ServiceAccountCredentials.from_json_keyfile_dict(
-                    credentials_dict, scope
-                )
-            else:
-                # Local development: use credentials.json file
-                credentials = ServiceAccountCredentials.from_json_keyfile_name(
-                    'credentials.json', scope
-                )
+            credentials = None
+
+            # Try Streamlit secrets first (for cloud deployment)
+            try:
+                import streamlit as st
+                if hasattr(st, 'secrets') and 'gcp_service_account' in st.secrets:
+                    credentials_dict = dict(st.secrets["gcp_service_account"])
+                    credentials = ServiceAccountCredentials.from_json_keyfile_dict(
+                        credentials_dict, scope
+                    )
+            except:
+                pass
+
+            # Fall back to local credentials.json file
+            if credentials is None:
+                if os.path.exists('credentials.json'):
+                    credentials = ServiceAccountCredentials.from_json_keyfile_name(
+                        'credentials.json', scope
+                    )
+                else:
+                    raise FileNotFoundError("No credentials found. Please add credentials.json or configure Streamlit secrets.")
 
             self.client = gspread.authorize(credentials)
 
@@ -73,7 +83,7 @@ class GoogleSheetsDatabase:
                 self.sheet.append_row(["id", "timestamp"])
 
         except Exception as e:
-            st.error(f"Failed to connect to Google Sheets: {str(e)}")
+            print(f"Failed to connect to Google Sheets: {str(e)}")
             raise
 
     def read_all(self) -> pd.DataFrame:
@@ -85,7 +95,7 @@ class GoogleSheetsDatabase:
                 return pd.DataFrame(columns=["id", "timestamp"])
             return pd.DataFrame(data)
         except Exception as e:
-            st.error(f"Error reading from Google Sheets: {str(e)}")
+            print(f"Error reading from Google Sheets: {str(e)}")
             return pd.DataFrame()
 
     def add_record(self, data: Dict) -> bool:
@@ -126,7 +136,7 @@ class GoogleSheetsDatabase:
             self.sheet.append_row(row_data)
             return True
         except Exception as e:
-            st.error(f"Error adding record: {str(e)}")
+            print(f"Error adding record: {str(e)}")
             return False
 
     def update_record(self, record_id: int, data: Dict) -> bool:
@@ -144,7 +154,7 @@ class GoogleSheetsDatabase:
             # Find the row with the matching ID
             cell = self.sheet.find(str(record_id))
             if not cell:
-                st.error(f"Record with ID {record_id} not found")
+                print(f"Record with ID {record_id} not found")
                 return False
 
             row_num = cell.row
@@ -161,7 +171,7 @@ class GoogleSheetsDatabase:
 
             return True
         except Exception as e:
-            st.error(f"Error updating record: {str(e)}")
+            print(f"Error updating record: {str(e)}")
             return False
 
     def delete_record(self, record_id: int) -> bool:
@@ -178,13 +188,13 @@ class GoogleSheetsDatabase:
             # Find the row with the matching ID
             cell = self.sheet.find(str(record_id))
             if not cell:
-                st.error(f"Record with ID {record_id} not found")
+                print(f"Record with ID {record_id} not found")
                 return False
 
             self.sheet.delete_rows(cell.row)
             return True
         except Exception as e:
-            st.error(f"Error deleting record: {str(e)}")
+            print(f"Error deleting record: {str(e)}")
             return False
 
     def search(self, column: str, value) -> pd.DataFrame:
@@ -201,12 +211,12 @@ class GoogleSheetsDatabase:
         try:
             df = self.read_all()
             if column not in df.columns:
-                st.error(f"Column {column} not found")
+                print(f"Column {column} not found")
                 return pd.DataFrame()
 
             return df[df[column] == value]
         except Exception as e:
-            st.error(f"Error searching: {str(e)}")
+            print(f"Error searching: {str(e)}")
             return pd.DataFrame()
 
     def get_columns(self) -> List[str]:
@@ -214,7 +224,7 @@ class GoogleSheetsDatabase:
         try:
             return self.sheet.row_values(1)
         except Exception as e:
-            st.error(f"Error getting columns: {str(e)}")
+            print(f"Error getting columns: {str(e)}")
             return ["id", "timestamp"]
 
     def bulk_import(self, df_import: pd.DataFrame, mode: str = "append") -> bool:
@@ -261,7 +271,7 @@ class GoogleSheetsDatabase:
 
             return True
         except Exception as e:
-            st.error(f"Error importing data: {str(e)}")
+            print(f"Error importing data: {str(e)}")
             return False
 
     def get_spreadsheet_url(self) -> str:
